@@ -1,16 +1,17 @@
+
 <script setup>
 import axios from 'axios'
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import APIService from '../api/APIService.js'
 import { useAuthStore } from '../store/AuthStore.js'
 
 const authStore = useAuthStore()
-
+const route = useRoute()
 const restaurants = ref([])
 const categories = ref([])
 const selectedCategory = ref('')
 const search = ref('')
-
 const loading = ref(false)
 const error = ref('')
 const categoryError = ref('')
@@ -22,6 +23,7 @@ const reviewsError = ref('')
 
 const showReviewForm = ref(false)
 const reviewRating = ref(5)
+const hoveredRating = ref(0)
 const reviewComment = ref('')
 const reviewSubmitting = ref(false)
 const reviewFormError = ref('')
@@ -36,39 +38,31 @@ let reviewRequest = 0
 
 const averageRating = computed(() => {
   if (!reviews.value.length) return null
-
   const total = reviews.value.reduce(
-    (sum, review) => sum + Number(review.rating),
-    0
+    (sum, review) => sum + Number(review.rating), 0
   )
-
   return (total / reviews.value.length).toFixed(1)
 })
 
 const alreadyReviewed = computed(() =>
   reviews.value.some(
-    (review) => review.user === authStore.user?.id
+    review => review.user === authStore.user?.id
   )
 )
 
-// Collect results if the backend uses pagination.
 async function collectResults(response) {
-  if (Array.isArray(response.data)) {
-    return response.data
-  }
+  if (Array.isArray(response.data)) return response.data
 
   const results = [...(response.data.results ?? [])]
   let next = response.data.next
 
   while (next) {
     const page = await axios.get(next, {
-      headers: APIService.getAuthHeaders(),
+      headers: APIService.getAuthHeaders()
     })
-
     results.push(...(page.data.results ?? []))
     next = page.data.next
   }
-
   return results
 }
 
@@ -76,31 +70,22 @@ function getErrorMessage(err, fallback) {
   if (err.response?.status === 401) {
     return 'Your session has expired. Please log in again.'
   }
-
   const data = err.response?.data
-
   if (data && typeof data === 'object') {
-    return Object.values(data)
-      .flat()
-      .map(String)
-      .join(' ')
+    return Object.values(data).flat().map(String).join(' ')
   }
-
   return fallback
 }
 
 async function loadRestaurants() {
-  const requestId = ++restaurantRequest
-
+  const id = ++restaurantRequest
   loading.value = true
   error.value = ''
 
   const params = {}
-
   if (selectedCategory.value) {
     params.category = selectedCategory.value
   }
-
   if (search.value.trim()) {
     params.search = search.value.trim()
   }
@@ -108,21 +93,15 @@ async function loadRestaurants() {
   try {
     const response = await APIService.getRestaurants(params)
     const results = await collectResults(response)
-
-    if (requestId === restaurantRequest) {
-      restaurants.value = results
-    }
+    if (id === restaurantRequest) restaurants.value = results
   } catch (err) {
-    if (requestId === restaurantRequest) {
+    if (id === restaurantRequest) {
       error.value = getErrorMessage(
-        err,
-        'Unable to load restaurants.'
+        err, 'Unable to load restaurants.'
       )
     }
   } finally {
-    if (requestId === restaurantRequest) {
-      loading.value = false
-    }
+    if (id === restaurantRequest) loading.value = false
   }
 }
 
@@ -135,8 +114,8 @@ async function loadCategories() {
   }
 }
 
-function selectCategory(categoryId) {
-  selectedCategory.value = categoryId
+function selectCategory(id) {
+  selectedCategory.value = id
   loadRestaurants()
 }
 
@@ -149,6 +128,7 @@ function clearFilters() {
 function resetActions() {
   showReviewForm.value = false
   reviewRating.value = 5
+  hoveredRating.value = 0
   reviewComment.value = ''
   reviewFormError.value = ''
   reviewSuccess.value = ''
@@ -163,8 +143,7 @@ function openRestaurant(restaurant) {
 }
 
 async function loadReviews(restaurantId) {
-  const requestId = ++reviewRequest
-
+  const id = ++reviewRequest
   reviews.value = []
   reviewsLoading.value = true
   reviewsError.value = ''
@@ -172,23 +151,19 @@ async function loadReviews(restaurantId) {
   try {
     const response = await APIService.getReviews(restaurantId)
     const results = await collectResults(response)
-
-    if (requestId === reviewRequest) {
+    if (id === reviewRequest) {
       reviews.value = results.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
       )
     }
   } catch (err) {
-    if (requestId === reviewRequest) {
+    if (id === reviewRequest) {
       reviewsError.value = getErrorMessage(
-        err,
-        'Unable to load reviews.'
+        err, 'Unable to load reviews.'
       )
     }
   } finally {
-    if (requestId === reviewRequest) {
-      reviewsLoading.value = false
-    }
+    if (id === reviewRequest) reviewsLoading.value = false
   }
 }
 
@@ -206,11 +181,10 @@ function formatDate(value) {
 }
 
 async function submitReview() {
-  if (reviewSubmitting.value) return
+  if (reviewSubmitting.value || !selectedRestaurant.value) return
 
   const restaurantId = selectedRestaurant.value.id
   const comment = reviewComment.value.trim()
-
   reviewFormError.value = ''
   reviewSuccess.value = ''
 
@@ -220,88 +194,113 @@ async function submitReview() {
   }
 
   reviewSubmitting.value = true
-
   try {
     await APIService.addReview({
       restaurant: restaurantId,
       rating: Number(reviewRating.value),
-      comment,
+      comment
     })
 
     if (selectedRestaurant.value?.id === restaurantId) {
       showReviewForm.value = false
       reviewComment.value = ''
-      reviewSuccess.value = 'Your review was posted.'
+      reviewSuccess.value = 'Your review was posted!'
       await loadReviews(restaurantId)
     }
   } catch (err) {
-    if (selectedRestaurant.value?.id === restaurantId) {
-      reviewFormError.value = getErrorMessage(
-        err,
-        'Unable to post your review.'
-      )
-    }
+    reviewFormError.value = getErrorMessage(
+      err, 'Unable to post your review.'
+    )
   } finally {
     reviewSubmitting.value = false
   }
 }
 
 async function saveToPlaces() {
-  if (savingPlace.value) return
+  if (savingPlace.value || !selectedRestaurant.value) return
 
   const restaurantId = selectedRestaurant.value.id
-
   savingPlace.value = true
   saveError.value = ''
   saveSuccess.value = ''
 
   try {
     await APIService.saveRestaurant(
-      restaurantId,
-      'want_to_visit'
+      restaurantId, 'want_to_visit'
     )
-
     if (selectedRestaurant.value?.id === restaurantId) {
-      saveSuccess.value = 'Saved to My Places as Want to Visit.'
+      saveSuccess.value = 'Saved to My Places!'
     }
   } catch (err) {
-    if (selectedRestaurant.value?.id === restaurantId) {
-      saveError.value = getErrorMessage(
-        err,
-        'Unable to save this restaurant.'
-      )
-    }
+    saveError.value = getErrorMessage(
+      err, 'Unable to save this restaurant.'
+    )
   } finally {
     savingPlace.value = false
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadCategories()
-  loadRestaurants()
+  await loadRestaurants()
+
+  if (route.params.id) {
+    try {
+      const response = await APIService.getRestaurant(route.params.id)
+      openRestaurant(response.data)
+    } catch (err) {
+      console.error('Unable to open restaurant:', err)
+      error.value = 'Unable to load restaurant details.'
+    }
+  }
 })
 </script>
 
 <template>
   <section class="restaurant-page">
-    <!-- Restaurant list -->
+
+    <!-- HERO SECTION -->
     <template v-if="!selectedRestaurant">
-      <h1>Restaurants</h1>
-      <p class="intro">Discover a new place to eat.</p>
+      <div class="hero">
+        <div class="hero-content">
+          <span class="eyebrow">✦ RATE MY RESTAURANT</span>
+          <h1>
+            Discover your next
+            <em>favorite</em> restaurant.
+          </h1>
+          <p>
+            Explore local favorites, share honest reviews,
+            and save the places you can't wait to try.
+          </p>
+          <div class="hero-tags">
+            <span>✦ Explore</span>
+            <span>★ Review</span>
+            <span>♡ Save Favorites</span>
+          </div>
+        </div>
+        <div class="hero-decoration" aria-hidden="true">
+          <div class="plate">🍽️</div>
+          <p>Good food. Great memories.</p>
+        </div>
+      </div>
+
+      <!-- SEARCH SECTION -->
+      <div class="section-heading">
+        <span class="eyebrow">EXPLORE & DISCOVER</span>
+        <h2>Find your perfect spot</h2>
+        <p>Great restaurants are waiting to be discovered.</p>
+      </div>
 
       <form class="search-bar" @submit.prevent="loadRestaurants">
         <label class="search-field">
-          <span>Search restaurants</span>
-
+          <span>Search Restaurants</span>
           <input
             v-model="search"
             type="search"
-            placeholder="Search by name, city, or description"
+            placeholder="Search by name, city, or description..."
           />
         </label>
-
         <button type="submit">Search</button>
-
         <button
           type="button"
           class="secondary-button"
@@ -311,24 +310,22 @@ onMounted(() => {
         </button>
       </form>
 
-      <div class="category-filters" aria-label="Filter by category">
+      <!-- CATEGORY FILTERS -->
+      <div class="category-filters">
         <button
           type="button"
           class="category-button"
           :class="{ active: selectedCategory === '' }"
-          :aria-pressed="selectedCategory === ''"
           @click="selectCategory('')"
         >
-          All
+          All Restaurants
         </button>
-
         <button
           v-for="category in categories"
           :key="category.id"
           type="button"
           class="category-button"
           :class="{ active: selectedCategory === category.id }"
-          :aria-pressed="selectedCategory === category.id"
           @click="selectCategory(category.id)"
         >
           {{ category.name }}
@@ -339,11 +336,16 @@ onMounted(() => {
         {{ categoryError }}
       </p>
 
-      <p v-if="loading" role="status">
-        Loading restaurants...
-      </p>
+      <!-- LOADING -->
+      <div v-if="loading" class="empty-state" role="status">
+        <div class="empty-icon">🍽️</div>
+        <h3>Finding delicious places...</h3>
+        <p>Loading restaurants, please wait.</p>
+      </div>
 
-      <div v-else-if="error" role="alert">
+      <!-- ERROR -->
+      <div v-else-if="error" class="empty-state" role="alert">
+        <h3>Something went wrong</h3>
         <p>{{ error }}</p>
         <button @click="loadRestaurants">Try Again</button>
       </div>
@@ -355,10 +357,20 @@ onMounted(() => {
           found
         </p>
 
-        <p v-if="restaurants.length === 0">
-          No restaurants match your search.
-        </p>
+        <!-- EMPTY STATE -->
+        <div v-if="restaurants.length === 0" class="empty-state">
+          <div class="empty-icon">🍽️</div>
+          <h3>No restaurants found yet</h3>
+          <p>
+            Try a different search or clear your filters.
+            Restaurants may also need to be added in the backend.
+          </p>
+          <button @click="clearFilters">
+            Show All Restaurants
+          </button>
+        </div>
 
+        <!-- RESTAURANT CARDS -->
         <div v-else class="restaurant-list">
           <button
             v-for="restaurant in restaurants"
@@ -367,19 +379,21 @@ onMounted(() => {
             class="restaurant-card"
             @click="openRestaurant(restaurant)"
           >
-            <span class="card-heading">
-              <span class="restaurant-name">
-                {{ restaurant.name }}
-              </span>
+            <span class="card-top">
+              <span class="restaurant-icon">✦</span>
+              <span class="details-link">Explore →</span>
+            </span>
 
-              <span class="details-link">
-                View Details →
-              </span>
+            <span class="restaurant-name">
+              {{ restaurant.name }}
             </span>
 
             <span class="restaurant-meta">
-              {{ restaurant.category_name }}
-              · {{ restaurant.city }}, {{ restaurant.state }}
+              📍 {{ restaurant.city }}, {{ restaurant.state }}
+            </span>
+
+            <span class="category-label">
+              {{ restaurant.category_name || 'Restaurant' }}
             </span>
 
             <span
@@ -393,14 +407,9 @@ onMounted(() => {
       </template>
     </template>
 
-    <!-- Restaurant details -->
+    <!-- RESTAURANT DETAILS -->
     <template v-else>
-      <button
-        type="button"
-        class="back-button"
-        :disabled="reviewSubmitting || savingPlace"
-        @click="backToList"
-      >
+      <button class="back-button" @click="backToList">
         ← Back to Restaurants
       </button>
 
@@ -412,7 +421,7 @@ onMounted(() => {
         <h1>{{ selectedRestaurant.name }}</h1>
 
         <p class="address">
-          {{ selectedRestaurant.address }},
+          📍 {{ selectedRestaurant.address }},
           {{ selectedRestaurant.city }},
           {{ selectedRestaurant.state }}
         </p>
@@ -423,106 +432,97 @@ onMounted(() => {
         >
           <template v-if="averageRating">
             ★ {{ averageRating }} / 5
-            <span>
-              · {{ reviews.length }}
-              {{ reviews.length === 1 ? 'review' : 'reviews' }}
-            </span>
+            · {{ reviews.length }}
+            {{ reviews.length === 1 ? 'review' : 'reviews' }}
           </template>
-
           <template v-else>
             No ratings yet
           </template>
         </p>
 
         <p class="description">
-          {{ selectedRestaurant.description || 'No description available.' }}
+          {{
+            selectedRestaurant.description ||
+            'No description available.'
+          }}
         </p>
 
         <div class="detail-actions">
           <button
             v-if="!alreadyReviewed"
-            type="button"
             :disabled="reviewSubmitting || reviewsLoading"
             @click="showReviewForm = !showReviewForm"
           >
-            {{ showReviewForm ? 'Cancel Review' : 'Write a Review' }}
+            {{ showReviewForm ? 'Cancel Review' : '★ Write a Review' }}
           </button>
 
           <button
-            type="button"
             class="secondary-button"
             :disabled="savingPlace || Boolean(saveSuccess)"
             @click="saveToPlaces"
           >
             {{
-              savingPlace
-                ? 'Saving...'
-                : saveSuccess
-                  ? 'Saved ✓'
-                  : 'Save to My Places'
+              savingPlace ? 'Saving...' :
+              saveSuccess ? 'Saved ✓' : '♡ Save to My Places'
             }}
           </button>
         </div>
 
-        <p v-if="alreadyReviewed && !reviewSuccess" class="muted">
+        <p v-if="alreadyReviewed" class="muted">
           You have already reviewed this restaurant.
         </p>
 
-        <p
-          v-if="saveSuccess"
-          class="success-message"
-          role="status"
-        >
+        <p v-if="saveSuccess" class="success-message" role="status">
           {{ saveSuccess }}
           <router-link to="/my-places">
             View My Places
           </router-link>
         </p>
 
-        <p v-if="saveError" role="alert">
-          {{ saveError }}
-        </p>
-
-        <p
-          v-if="reviewSuccess"
-          class="success-message"
-          role="status"
-        >
+        <p v-if="saveError" role="alert">{{ saveError }}</p>
+        <p v-if="reviewSuccess" class="success-message" role="status">
           {{ reviewSuccess }}
         </p>
 
-        <!-- Write a review -->
+        <!-- REVIEW FORM -->
         <form
           v-if="showReviewForm && !alreadyReviewed"
           class="review-form"
           @submit.prevent="submitReview"
         >
-          <h2>Write a Review</h2>
+          <h2>Share Your Experience</h2>
+          <p>Posting as {{ authStore.user?.username }}</p>
 
-          <p>
-            Posting as {{ authStore.user?.username }}
-          </p>
-
-          <label for="review-rating">Rating</label>
-          <select
-            id="review-rating"
-            v-model="reviewRating"
-            :disabled="reviewSubmitting"
-            required
-          >
-            <option :value="5">5 — Excellent</option>
-            <option :value="4">4 — Good</option>
-            <option :value="3">3 — Average</option>
-            <option :value="2">2 — Poor</option>
-            <option :value="1">1 — Very Poor</option>
-          </select>
+          <label>How would you rate this restaurant?</label>
+          <div class="star-picker" role="group" aria-label="Rating">
+            <button
+              v-for="star in 5"
+              :key="star"
+              type="button"
+              class="star-button"
+              :class="{
+                lit: star <= (hoveredRating || reviewRating)
+              }"
+              :aria-label="`${star} stars`"
+              :aria-pressed="reviewRating === star"
+              :disabled="reviewSubmitting"
+              @mouseenter="hoveredRating = star"
+              @mouseleave="hoveredRating = 0"
+              @focus="hoveredRating = star"
+              @blur="hoveredRating = 0"
+              @click="reviewRating = star"
+            >
+              ★
+            </button>
+            <span class="rating-label">{{ reviewRating }} / 5</span>
+          </div>
 
           <label for="review-comment">Your Review</label>
           <textarea
             id="review-comment"
             v-model="reviewComment"
             rows="4"
-            placeholder="Tell us about your experience."
+            placeholder="Tell us about your experience..."
             :disabled="reviewSubmitting"
             required
           ></textarea>
@@ -537,9 +537,9 @@ onMounted(() => {
         </form>
       </article>
 
-      <!-- Existing reviews -->
+      <!-- EXISTING REVIEWS -->
       <section class="reviews-section">
-        <h2>Reviews</h2>
+        <h2>Community Reviews</h2>
 
         <p v-if="reviewsLoading" role="status">
           Loading reviews...
@@ -547,14 +547,13 @@ onMounted(() => {
 
         <div v-else-if="reviewsError" role="alert">
           <p>{{ reviewsError }}</p>
-
           <button @click="loadReviews(selectedRestaurant.id)">
             Try Again
           </button>
         </div>
 
-        <p v-else-if="reviews.length === 0">
-          This restaurant has no reviews yet.
+        <p v-else-if="reviews.length === 0" class="muted">
+          No reviews yet. Be the first to share your experience!
         </p>
 
         <div v-else class="reviews-list">
@@ -565,19 +564,15 @@ onMounted(() => {
           >
             <div class="review-heading">
               <strong>{{ review.username || 'User' }}</strong>
-
               <time :datetime="review.created_at">
                 {{ formatDate(review.created_at) }}
               </time>
             </div>
 
             <p class="review-rating">
-              {{ review.rating }} / 5 ★
+              ★ {{ review.rating }} / 5
             </p>
-
-            <p class="review-comment">
-              {{ review.comment }}
-            </p>
+            <p class="review-comment">{{ review.comment }}</p>
           </article>
         </div>
       </section>
@@ -587,68 +582,154 @@ onMounted(() => {
 
 <style scoped>
 .restaurant-page {
-  width: 100%;
-  max-width: 1050px;
+  max-width: 1180px;
   margin: auto;
-  padding: 40px 24px 60px;
+  padding: 28px 24px 70px;
+  color: #392723;
 }
 
-h1,
-h2 {
+h1, h2, h3 {
   color: #71372e;
-}
-
-h1 {
-  margin: 0 0 12px;
-  font-size: clamp(28px, 4vw, 38px);
-}
-
-.intro,
-.address,
-.restaurant-meta,
-.muted {
-  color: #735c50;
 }
 
 p {
   line-height: 1.7;
 }
 
-button,
-input,
-select,
-textarea {
+button, input, textarea {
   font: inherit;
 }
 
 button {
-  padding: 12px 18px;
+  padding: 12px 20px;
   background: #71372e;
-  color: #f7eee3;
+  color: #fff7ef;
   border: 1px solid #71372e;
-  border-radius: 6px;
+  border-radius: 9px;
   cursor: pointer;
+  transition: 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+  background: #8d4a4c;
 }
 
 button:disabled {
-  opacity: 0.65;
-  cursor: default;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 button:focus-visible,
 input:focus-visible,
-select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #71372e;
-  outline-offset: 4px;
+  outline: 3px solid #d59a37;
+  outline-offset: 3px;
+}
+
+/* Hero */
+.hero {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  background: linear-gradient(120deg, #52242e, #914d59);
+  color: white;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px #52242e25;
+}
+
+.hero-content {
+  padding: clamp(30px, 5vw, 65px);
+}
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-weight: 800;
+  color: #d5a76e;
+}
+
+.hero .eyebrow {
+  color: #f2d4a4;
+}
+
+.hero h1 {
+  color: white;
+  font-size: clamp(34px, 4.5vw, 55px);
+  line-height: 1.15;
+  margin: 20px 0;
+}
+
+.hero h1 em {
+  color: #f5d5aa;
+  font-family: Georgia, serif;
+}
+
+.hero p {
+  color: #f6e7df;
+}
+
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.hero-tags span {
+  padding: 8px 13px;
+  border: 1px solid #ffffff55;
+  border-radius: 30px;
+  font-size: 12px;
+}
+
+.hero-decoration {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #dcae86, #85404e);
+}
+
+.plate {
+  display: grid;
+  place-items: center;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 8px solid #fff7ec;
+  background: #f9e8d5;
+  font-size: 70px;
+  box-shadow: 0 12px 35px #32121c55;
+}
+
+.hero-decoration p {
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+/* Search */
+.section-heading {
+  margin: 45px 0 22px;
+}
+
+.section-heading h2 {
+  font-size: 30px;
+  margin: 8px 0;
+}
+
+.section-heading p {
+  color: #735c50;
 }
 
 .search-bar {
   display: flex;
-  align-items: flex-end;
   flex-wrap: wrap;
+  align-items: end;
   gap: 12px;
-  margin: 28px 0 20px;
+  padding: 22px;
+  background: #fffaf6;
+  border: 1px solid #eaded3;
+  border-radius: 16px;
 }
 
 .search-field {
@@ -659,19 +740,13 @@ textarea:focus-visible {
   font-weight: bold;
 }
 
-input,
-select,
-textarea {
+input, textarea {
   width: 100%;
-  padding: 12px;
+  padding: 13px;
   background: white;
   color: #512b25;
   border: 1px solid #bda99b;
-  border-radius: 6px;
-}
-
-textarea {
-  resize: vertical;
+  border-radius: 8px;
 }
 
 .secondary-button {
@@ -679,157 +754,227 @@ textarea {
   color: #71372e;
 }
 
+.secondary-button:hover:not(:disabled) {
+  color: white;
+}
+
 .category-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 24px;
+  margin: 24px 0;
 }
 
 .category-button {
-  padding: 7px 16px;
   background: white;
   color: #71372e;
   border: 1px solid #d9c3b2;
-  border-radius: 24px;
-}
-
-.category-button:hover {
-  background: #eee1d4;
+  border-radius: 30px;
+  padding: 9px 18px;
 }
 
 .category-button.active {
   background: #71372e;
   color: white;
-  border-color: #71372e;
 }
 
-.result-count {
+.result-count, .muted {
   color: #735c50;
-  font-size: 14px;
 }
 
-.restaurant-list,
-.reviews-list {
+/* Restaurant cards */
+.restaurant-list {
   display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
 }
 
 .restaurant-card {
-  display: grid;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 13px;
   width: 100%;
-  padding: 24px;
+  min-height: 190px;
+  padding: 25px;
   background: white;
-  color: #512b25;
-  border: 1px solid #d9c3b2;
-  border-radius: 8px;
+  color: #392723;
+  border: 1px solid #e1cfc3;
+  border-radius: 17px;
   text-align: left;
+  box-shadow: 0 8px 22px #52242e0d;
 }
 
 .restaurant-card:hover {
+  transform: translateY(-4px);
   background: #fffaf6;
-  border-color: #71372e;
+  box-shadow: 0 18px 35px #52242e20;
 }
 
-.card-heading {
+.card-top {
   display: flex;
+  width: 100%;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
 }
 
-.restaurant-name {
-  color: #71372e;
-  font-size: 22px;
-  font-weight: bold;
+.restaurant-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  background: #f4e5d9;
+  color: #8c4c51;
+  border-radius: 11px;
 }
 
 .details-link {
   color: #71372e;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.restaurant-name {
+  font-size: 23px;
+  font-weight: bold;
+  color: #71372e;
 }
 
 .restaurant-meta {
+  color: #735c50;
   font-size: 14px;
 }
 
+.category-label {
+  display: inline-block;
+  padding: 7px 14px;
+  background: #eee1d4;
+  color: #633d32;
+  border-radius: 30px;
+  font-size: 13px;
+}
+
 .card-description {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  color: #735c50;
   line-height: 1.6;
 }
 
+/* Empty state */
+.empty-state {
+  padding: 55px 24px;
+  background: #fffaf6;
+  border: 1px dashed #d9c3b2;
+  border-radius: 18px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 52px;
+}
+
+.empty-state h3 {
+  font-size: 24px;
+}
+
+.empty-state p {
+  max-width: 480px;
+  margin: 0 auto 22px;
+  color: #735c50;
+}
+
+/* Details */
 .back-button {
   margin-bottom: 24px;
-  padding: 8px 0;
   background: transparent;
   color: #71372e;
   border: none;
 }
 
-.details-card {
+.back-button:hover {
+  color: #71372e;
+  background: #f4e5d9;
+}
+
+.details-card, .review-card {
   padding: 30px;
   background: white;
-  border: 1px solid #d9c3b2;
-  border-radius: 8px;
+  border: 1px solid #e1cfc3;
+  border-radius: 18px;
+  box-shadow: 0 10px 25px #52242e0d;
 }
 
-.category-label {
-  display: inline-block;
-  margin-bottom: 16px;
-  padding: 6px 14px;
-  background: #eee1d4;
-  color: #633d32;
-  border-radius: 20px;
-  font-size: 14px;
+.details-card h1 {
+  margin: 18px 0;
+  font-size: 38px;
 }
 
-.rating-summary {
-  color: #71372e;
-  font-weight: bold;
-}
-
-.rating-summary span {
+.address, .description {
   color: #735c50;
-  font-weight: normal;
 }
 
-.description,
-.review-comment {
+.description, .review-comment {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-.description {
-  margin-bottom: 0;
+.rating-summary, .review-rating {
+  color: #b17b26;
+  font-weight: bold;
 }
 
 .detail-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 25px;
 }
 
+/* Star rating */
 .review-form {
   display: grid;
-  gap: 12px;
-  margin-top: 28px;
-  padding-top: 24px;
-  border-top: 1px solid #d9c3b2;
-}
-
-.review-form h2,
-.review-form p {
-  margin: 0;
+  gap: 14px;
+  margin-top: 30px;
+  padding-top: 25px;
+  border-top: 1px solid #e1cfc3;
 }
 
 .review-form label {
   font-weight: bold;
+}
+
+.star-picker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.star-button {
+  padding: 3px 6px;
+  background: transparent;
+  color: #cbbeb4;
+  border: none;
+  font-size: 35px;
+}
+
+.star-button.lit {
+  color: #d59a37;
+}
+
+.star-button:hover:not(:disabled) {
+  background: transparent;
+  color: #d59a37;
+  transform: scale(1.12);
+}
+
+.rating-label {
+  margin-left: 12px;
+  color: #735c50;
+  font-weight: bold;
+}
+
+textarea {
+  resize: vertical;
 }
 
 .success-message {
@@ -841,52 +986,61 @@ textarea {
   font-weight: bold;
 }
 
+/* Reviews */
 .reviews-section {
-  margin-top: 32px;
+  margin-top: 35px;
 }
 
-.review-card {
-  padding: 24px;
-  background: white;
-  border: 1px solid #d9c3b2;
-  border-radius: 8px;
+.reviews-list {
+  display: grid;
+  gap: 16px;
 }
 
 .review-heading {
   display: flex;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
+  gap: 15px;
 }
 
 .review-heading time {
   color: #735c50;
-  font-size: 14px;
-}
-
-.review-rating {
-  margin: 12px 0;
-  color: #71372e;
-  font-weight: bold;
-}
-
-.review-comment {
-  margin-bottom: 0;
+  font-size: 13px;
 }
 
 [role="alert"] {
   color: #8c2222;
 }
 
-@media (max-width: 600px) {
-  .restaurant-page {
-    padding: 28px 16px;
+/* Mobile */
+@media (max-width: 760px) {
+  .hero {
+    grid-template-columns: 1fr;
   }
 
-  .restaurant-card,
-  .details-card,
-  .review-card {
+  .hero-decoration {
+    display: none;
+  }
+
+  .restaurant-list {
+    grid-template-columns: 1fr;
+  }
+
+  .restaurant-page {
+    padding: 20px 15px 50px;
+  }
+
+  .details-card, .review-card {
     padding: 20px;
+  }
+
+  .section-heading h2 {
+    font-size: 25px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
   }
 }
 </style>

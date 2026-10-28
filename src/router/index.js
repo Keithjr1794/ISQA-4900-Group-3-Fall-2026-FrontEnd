@@ -20,6 +20,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+  path: '/restaurants/:id',
+  name: 'RestaurantDetail',
+  component: RestaurantList,
+  meta: { requiresAuth: true },
+},
+  {
     path: '/my-places',
     name: 'MyPlaces',
     component: MyPlaces,
