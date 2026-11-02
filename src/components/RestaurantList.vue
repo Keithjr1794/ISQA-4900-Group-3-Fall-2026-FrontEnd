@@ -259,30 +259,7 @@ onMounted(async () => {
 <template>
   <section class="restaurant-page">
 
-    <!-- HERO SECTION -->
     <template v-if="!selectedRestaurant">
-      <div class="hero">
-        <div class="hero-content">
-          <span class="eyebrow">✦ RATE MY RESTAURANT</span>
-          <h1>
-            Discover your next
-            <em>favorite</em> restaurant.
-          </h1>
-          <p>
-            Explore local favorites, share honest reviews,
-            and save the places you can't wait to try.
-          </p>
-          <div class="hero-tags">
-            <span>✦ Explore</span>
-            <span>★ Review</span>
-            <span>♡ Save Favorites</span>
-          </div>
-        </div>
-        <div class="hero-decoration" aria-hidden="true">
-          <div class="plate">🍽️</div>
-          <p>Good food. Great memories.</p>
-        </div>
-      </div>
 
       <!-- SEARCH SECTION -->
       <div class="section-heading">
@@ -626,21 +603,6 @@ textarea:focus-visible {
   outline-offset: 3px;
 }
 
-/* Hero */
-.hero {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr;
-  background: linear-gradient(120deg, #52242e, #914d59);
-  color: white;
-  border-radius: 22px;
-  overflow: hidden;
-  box-shadow: 0 18px 40px #52242e25;
-}
-
-.hero-content {
-  padding: clamp(30px, 5vw, 65px);
-}
-
 .eyebrow {
   font-size: 12px;
   letter-spacing: 2px;
@@ -648,68 +610,9 @@ textarea:focus-visible {
   color: #d5a76e;
 }
 
-.hero .eyebrow {
-  color: #f2d4a4;
-}
-
-.hero h1 {
-  color: white;
-  font-size: clamp(34px, 4.5vw, 55px);
-  line-height: 1.15;
-  margin: 20px 0;
-}
-
-.hero h1 em {
-  color: #f5d5aa;
-  font-family: Georgia, serif;
-}
-
-.hero p {
-  color: #f6e7df;
-}
-
-.hero-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 25px;
-}
-
-.hero-tags span {
-  padding: 8px 13px;
-  border: 1px solid #ffffff55;
-  border-radius: 30px;
-  font-size: 12px;
-}
-
-.hero-decoration {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle, #dcae86, #85404e);
-}
-
-.plate {
-  display: grid;
-  place-items: center;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  border: 8px solid #fff7ec;
-  background: #f9e8d5;
-  font-size: 70px;
-  box-shadow: 0 12px 35px #32121c55;
-}
-
-.hero-decoration p {
-  font-size: 13px;
-  letter-spacing: 1px;
-}
-
 /* Search */
 .section-heading {
-  margin: 45px 0 22px;
+  margin: 20px 0 22px;
 }
 
 .section-heading h2 {
@@ -1013,14 +916,6 @@ textarea {
 
 /* Mobile */
 @media (max-width: 760px) {
-  .hero {
-    grid-template-columns: 1fr;
-  }
-
-  .hero-decoration {
-    display: none;
-  }
-
   .restaurant-list {
     grid-template-columns: 1fr;
   }
