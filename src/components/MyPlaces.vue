@@ -2,7 +2,7 @@
 <template>
   <section class="places-page">
     <div class="page-heading">
-      <span class="eyebrow">♡ YOUR COLLECTION</span>
+      <span class="eyebrow">YOUR COLLECTION</span>
       <h1>My Places</h1>
       <p>Keep your favorite restaurants close and plan your next visit.</p>
     </div>
@@ -18,7 +18,6 @@
     </div>
 
     <div v-else-if="places.length === 0" class="empty-state">
-      <div class="empty-icon">♡</div>
       <h2>No saved restaurants yet</h2>
       <p>Explore restaurants and save the ones you love!</p>
 
@@ -29,7 +28,7 @@
 
     <template v-else>
       <div class="collection-count">
-        ♡ {{ places.length }}
+        {{ places.length }}
         {{ places.length === 1 ? 'saved place' : 'saved places' }}
       </div>
 
@@ -43,7 +42,10 @@
             <span class="category">
               {{ categoryName(place.restaurant) }}
             </span>
-            <span class="heart">♥</span>
+
+            <span class="heart" aria-label="Saved restaurant">
+              ❤️
+            </span>
           </div>
 
           <h2>{{ restaurantName(place.restaurant) }}</h2>
@@ -74,7 +76,7 @@
               :disabled="removingId === place.id"
               @click="removePlace(place)"
             >
-              {{ removingId === place.id ? 'Removing...' : 'Remove ♡' }}
+              {{ removingId === place.id ? 'Removing...' : 'Remove' }}
             </button>
           </div>
         </article>
@@ -92,22 +94,21 @@ const loading = ref(true)
 const error = ref('')
 const removingId = ref(null)
 
-// Get restaurant ID whether the API returns
-// a number or a complete restaurant object.
+// Get restaurant ID from either a number or object.
 function restaurantId(restaurant) {
   return typeof restaurant === 'object' && restaurant !== null
     ? restaurant.id
     : restaurant
 }
 
-// Display the real restaurant name.
+// Display the restaurant name.
 function restaurantName(restaurant) {
   return typeof restaurant === 'object' && restaurant !== null
     ? restaurant.name || 'Restaurant'
     : 'Saved Restaurant'
 }
 
-// Display restaurant city and state.
+// Display the restaurant location.
 function restaurantLocation(restaurant) {
   if (typeof restaurant !== 'object' || restaurant === null) {
     return 'Location unavailable'
@@ -127,7 +128,7 @@ function restaurantDescription(restaurant) {
   return restaurant.description || 'A place worth visiting!'
 }
 
-// Display restaurant category.
+// Display the restaurant category.
 function categoryName(restaurant) {
   if (typeof restaurant !== 'object' || restaurant === null) {
     return 'Restaurant'
@@ -142,8 +143,7 @@ function categoryName(restaurant) {
   return restaurant.category_name || 'Restaurant'
 }
 
-// Load saved restaurants and retrieve full details
-// when the saved-restaurants API returns only IDs.
+// Load saved restaurants.
 async function loadPlaces() {
   loading.value = true
   error.value = ''
@@ -162,7 +162,7 @@ async function loadPlaces() {
       savedPlaces.map(async (place) => {
         const id = restaurantId(place.restaurant)
 
-        // Keep existing restaurant details if already provided.
+        // Keep restaurant details if already available.
         if (
           !id ||
           (
@@ -187,7 +187,6 @@ async function loadPlaces() {
             err
           )
 
-          // Keep the saved entry even if details fail.
           return place
         }
       })
@@ -257,6 +256,7 @@ h1 {
 .collection-count {
   margin-bottom: 22px;
   font-weight: 700;
+  color: #71372e;
 }
 
 .places-grid {
@@ -295,13 +295,14 @@ h1 {
 }
 
 .heart {
-  color: #9b4963;
-  font-size: 25px;
+  font-size: 26px;
+  line-height: 1;
 }
 
 .place-card h2 {
   margin: 24px 0 10px;
   font-size: 25px;
+  color: #71372e;
 }
 
 .location {
@@ -340,6 +341,7 @@ h1 {
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  font-family: inherit;
 }
 
 .primary-button,
@@ -349,10 +351,19 @@ h1 {
   border: 1px solid #71372e;
 }
 
+.primary-button:hover,
+.message button:hover {
+  background: #5b2b25;
+}
+
 .remove-button {
   background: transparent;
   color: #71372e;
   border: 1px solid #cba99b;
+}
+
+.remove-button:hover:not(:disabled) {
+  background: #f2e7e5;
 }
 
 .remove-button:disabled {
@@ -367,11 +378,6 @@ h1 {
   background: #fffaf6;
   border: 1px dashed #e0c6b8;
   border-radius: 22px;
-}
-
-.empty-icon {
-  font-size: 60px;
-  color: #9b4963;
 }
 
 .empty-state h2,

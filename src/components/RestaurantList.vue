@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/AuthStore.js'
 
 const authStore = useAuthStore()
 const route = useRoute()
+
 const restaurants = ref([])
 const categories = ref([])
 const selectedCategory = ref('')
@@ -38,9 +39,12 @@ let reviewRequest = 0
 
 const averageRating = computed(() => {
   if (!reviews.value.length) return null
+
   const total = reviews.value.reduce(
-    (sum, review) => sum + Number(review.rating), 0
+    (sum, review) => sum + Number(review.rating),
+    0
   )
+
   return (total / reviews.value.length).toFixed(1)
 })
 
@@ -60,9 +64,11 @@ async function collectResults(response) {
     const page = await axios.get(next, {
       headers: APIService.getAuthHeaders()
     })
+
     results.push(...(page.data.results ?? []))
     next = page.data.next
   }
+
   return results
 }
 
@@ -70,22 +76,28 @@ function getErrorMessage(err, fallback) {
   if (err.response?.status === 401) {
     return 'Your session has expired. Please log in again.'
   }
+
   const data = err.response?.data
+
   if (data && typeof data === 'object') {
     return Object.values(data).flat().map(String).join(' ')
   }
+
   return fallback
 }
 
 async function loadRestaurants() {
   const id = ++restaurantRequest
+
   loading.value = true
   error.value = ''
 
   const params = {}
+
   if (selectedCategory.value) {
     params.category = selectedCategory.value
   }
+
   if (search.value.trim()) {
     params.search = search.value.trim()
   }
@@ -93,15 +105,21 @@ async function loadRestaurants() {
   try {
     const response = await APIService.getRestaurants(params)
     const results = await collectResults(response)
-    if (id === restaurantRequest) restaurants.value = results
+
+    if (id === restaurantRequest) {
+      restaurants.value = results
+    }
   } catch (err) {
     if (id === restaurantRequest) {
       error.value = getErrorMessage(
-        err, 'Unable to load restaurants.'
+        err,
+        'Unable to load restaurants.'
       )
     }
   } finally {
-    if (id === restaurantRequest) loading.value = false
+    if (id === restaurantRequest) {
+      loading.value = false
+    }
   }
 }
 
@@ -144,6 +162,7 @@ function openRestaurant(restaurant) {
 
 async function loadReviews(restaurantId) {
   const id = ++reviewRequest
+
   reviews.value = []
   reviewsLoading.value = true
   reviewsError.value = ''
@@ -151,19 +170,24 @@ async function loadReviews(restaurantId) {
   try {
     const response = await APIService.getReviews(restaurantId)
     const results = await collectResults(response)
+
     if (id === reviewRequest) {
       reviews.value = results.sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        (a, b) =>
+          new Date(b.created_at) - new Date(a.created_at)
       )
     }
   } catch (err) {
     if (id === reviewRequest) {
       reviewsError.value = getErrorMessage(
-        err, 'Unable to load reviews.'
+        err,
+        'Unable to load reviews.'
       )
     }
   } finally {
-    if (id === reviewRequest) reviewsLoading.value = false
+    if (id === reviewRequest) {
+      reviewsLoading.value = false
+    }
   }
 }
 
@@ -181,10 +205,13 @@ function formatDate(value) {
 }
 
 async function submitReview() {
-  if (reviewSubmitting.value || !selectedRestaurant.value) return
+  if (reviewSubmitting.value || !selectedRestaurant.value) {
+    return
+  }
 
   const restaurantId = selectedRestaurant.value.id
   const comment = reviewComment.value.trim()
+
   reviewFormError.value = ''
   reviewSuccess.value = ''
 
@@ -194,6 +221,7 @@ async function submitReview() {
   }
 
   reviewSubmitting.value = true
+
   try {
     await APIService.addReview({
       restaurant: restaurantId,
@@ -209,7 +237,8 @@ async function submitReview() {
     }
   } catch (err) {
     reviewFormError.value = getErrorMessage(
-      err, 'Unable to post your review.'
+      err,
+      'Unable to post your review.'
     )
   } finally {
     reviewSubmitting.value = false
@@ -217,23 +246,29 @@ async function submitReview() {
 }
 
 async function saveToPlaces() {
-  if (savingPlace.value || !selectedRestaurant.value) return
+  if (savingPlace.value || !selectedRestaurant.value) {
+    return
+  }
 
   const restaurantId = selectedRestaurant.value.id
+
   savingPlace.value = true
   saveError.value = ''
   saveSuccess.value = ''
 
   try {
     await APIService.saveRestaurant(
-      restaurantId, 'want_to_visit'
+      restaurantId,
+      'want_to_visit'
     )
+
     if (selectedRestaurant.value?.id === restaurantId) {
       saveSuccess.value = 'Saved to My Places!'
     }
   } catch (err) {
     saveError.value = getErrorMessage(
-      err, 'Unable to save this restaurant.'
+      err,
+      'Unable to save this restaurant.'
     )
   } finally {
     savingPlace.value = false
@@ -246,7 +281,10 @@ onMounted(async () => {
 
   if (route.params.id) {
     try {
-      const response = await APIService.getRestaurant(route.params.id)
+      const response = await APIService.getRestaurant(
+        route.params.id
+      )
+
       openRestaurant(response.data)
     } catch (err) {
       console.error('Unable to open restaurant:', err)
@@ -259,25 +297,34 @@ onMounted(async () => {
 <template>
   <section class="restaurant-page">
 
+    <!-- RESTAURANT LIST -->
     <template v-if="!selectedRestaurant">
 
-      <!-- SEARCH SECTION -->
       <div class="section-heading">
         <span class="eyebrow">EXPLORE & DISCOVER</span>
         <h2>Find your perfect spot</h2>
         <p>Great restaurants are waiting to be discovered.</p>
       </div>
 
-      <form class="search-bar" @submit.prevent="loadRestaurants">
+      <!-- SEARCH -->
+      <form
+        class="search-bar"
+        @submit.prevent="loadRestaurants"
+      >
         <label class="search-field">
           <span>Search Restaurants</span>
+
           <input
             v-model="search"
             type="search"
             placeholder="Search by name, city, or description..."
           />
         </label>
-        <button type="submit">Search</button>
+
+        <button type="submit">
+          Search
+        </button>
+
         <button
           type="button"
           class="secondary-button"
@@ -287,7 +334,7 @@ onMounted(async () => {
         </button>
       </form>
 
-      <!-- CATEGORY FILTERS -->
+      <!-- CATEGORIES -->
       <div class="category-filters">
         <button
           type="button"
@@ -297,12 +344,15 @@ onMounted(async () => {
         >
           All Restaurants
         </button>
+
         <button
           v-for="category in categories"
           :key="category.id"
           type="button"
           class="category-button"
-          :class="{ active: selectedCategory === category.id }"
+          :class="{
+            active: selectedCategory === category.id
+          }"
           @click="selectCategory(category.id)"
         >
           {{ category.name }}
@@ -314,34 +364,53 @@ onMounted(async () => {
       </p>
 
       <!-- LOADING -->
-      <div v-if="loading" class="empty-state" role="status">
-        <div class="empty-icon">🍽️</div>
+      <div
+        v-if="loading"
+        class="empty-state"
+        role="status"
+      >
         <h3>Finding delicious places...</h3>
         <p>Loading restaurants, please wait.</p>
       </div>
 
       <!-- ERROR -->
-      <div v-else-if="error" class="empty-state" role="alert">
+      <div
+        v-else-if="error"
+        class="empty-state"
+        role="alert"
+      >
         <h3>Something went wrong</h3>
         <p>{{ error }}</p>
-        <button @click="loadRestaurants">Try Again</button>
+
+        <button @click="loadRestaurants">
+          Try Again
+        </button>
       </div>
 
       <template v-else>
+
         <p class="result-count">
           {{ restaurants.length }}
-          {{ restaurants.length === 1 ? 'restaurant' : 'restaurants' }}
+          {{
+            restaurants.length === 1
+              ? 'restaurant'
+              : 'restaurants'
+          }}
           found
         </p>
 
-        <!-- EMPTY STATE -->
-        <div v-if="restaurants.length === 0" class="empty-state">
-          <div class="empty-icon">🍽️</div>
+        <!-- EMPTY RESTAURANTS -->
+        <div
+          v-if="restaurants.length === 0"
+          class="empty-state"
+        >
           <h3>No restaurants found yet</h3>
+
           <p>
             Try a different search or clear your filters.
             Restaurants may also need to be added in the backend.
           </p>
+
           <button @click="clearFilters">
             Show All Restaurants
           </button>
@@ -357,8 +426,9 @@ onMounted(async () => {
             @click="openRestaurant(restaurant)"
           >
             <span class="card-top">
-              <span class="restaurant-icon">✦</span>
-              <span class="details-link">Explore →</span>
+              <span class="details-link">
+                Explore →
+              </span>
             </span>
 
             <span class="restaurant-name">
@@ -366,11 +436,15 @@ onMounted(async () => {
             </span>
 
             <span class="restaurant-meta">
-              📍 {{ restaurant.city }}, {{ restaurant.state }}
+              {{ restaurant.city }},
+              {{ restaurant.state }}
             </span>
 
             <span class="category-label">
-              {{ restaurant.category_name || 'Restaurant' }}
+              {{
+                restaurant.category_name ||
+                'Restaurant'
+              }}
             </span>
 
             <span
@@ -381,37 +455,51 @@ onMounted(async () => {
             </span>
           </button>
         </div>
+
       </template>
     </template>
 
     <!-- RESTAURANT DETAILS -->
     <template v-else>
-      <button class="back-button" @click="backToList">
+
+      <button
+        class="back-button"
+        @click="backToList"
+      >
         ← Back to Restaurants
       </button>
 
       <article class="details-card">
+
         <span class="category-label">
           {{ selectedRestaurant.category_name }}
         </span>
 
-        <h1>{{ selectedRestaurant.name }}</h1>
+        <h1>
+          {{ selectedRestaurant.name }}
+        </h1>
 
         <p class="address">
-          📍 {{ selectedRestaurant.address }},
+          {{ selectedRestaurant.address }},
           {{ selectedRestaurant.city }},
           {{ selectedRestaurant.state }}
         </p>
 
+        <!-- RATING SUMMARY -->
         <p
           v-if="!reviewsLoading && !reviewsError"
           class="rating-summary"
         >
           <template v-if="averageRating">
-            ★ {{ averageRating }} / 5
+            {{ averageRating }} / 5
             · {{ reviews.length }}
-            {{ reviews.length === 1 ? 'review' : 'reviews' }}
+            {{
+              reviews.length === 1
+                ? 'review'
+                : 'reviews'
+            }}
           </template>
+
           <template v-else>
             No ratings yet
           </template>
@@ -424,77 +512,148 @@ onMounted(async () => {
           }}
         </p>
 
+        <!-- ACTION BUTTONS -->
         <div class="detail-actions">
-          <button
-            v-if="!alreadyReviewed"
-            :disabled="reviewSubmitting || reviewsLoading"
-            @click="showReviewForm = !showReviewForm"
-          >
-            {{ showReviewForm ? 'Cancel Review' : '★ Write a Review' }}
-          </button>
 
           <button
+            v-if="!alreadyReviewed"
+            :disabled="
+              reviewSubmitting ||
+              reviewsLoading
+            "
+            @click="
+              showReviewForm = !showReviewForm
+            "
+          >
+            {{
+              showReviewForm
+                ? 'Cancel Review'
+                : 'Write a Review'
+            }}
+          </button>
+
+          <!-- FIXED SAVE BUTTON -->
+          <button
             class="secondary-button"
-            :disabled="savingPlace || Boolean(saveSuccess)"
+            :disabled="
+              savingPlace ||
+              Boolean(saveSuccess)
+            "
             @click="saveToPlaces"
           >
             {{
-              savingPlace ? 'Saving...' :
-              saveSuccess ? 'Saved ✓' : '♡ Save to My Places'
+              savingPlace
+                ? 'Saving...'
+                : (
+                    saveSuccess
+                      ? '♥ Saved'
+                      : '♡ Save to My Places'
+                  )
             }}
           </button>
+
         </div>
 
-        <p v-if="alreadyReviewed" class="muted">
+        <p
+          v-if="alreadyReviewed"
+          class="muted"
+        >
           You have already reviewed this restaurant.
         </p>
 
-        <p v-if="saveSuccess" class="success-message" role="status">
+        <p
+          v-if="saveSuccess"
+          class="success-message"
+          role="status"
+        >
           {{ saveSuccess }}
+
           <router-link to="/my-places">
             View My Places
           </router-link>
         </p>
 
-        <p v-if="saveError" role="alert">{{ saveError }}</p>
-        <p v-if="reviewSuccess" class="success-message" role="status">
+        <p v-if="saveError" role="alert">
+          {{ saveError }}
+        </p>
+
+        <p
+          v-if="reviewSuccess"
+          class="success-message"
+          role="status"
+        >
           {{ reviewSuccess }}
         </p>
 
         <!-- REVIEW FORM -->
         <form
-          v-if="showReviewForm && !alreadyReviewed"
+          v-if="
+            showReviewForm &&
+            !alreadyReviewed
+          "
           class="review-form"
           @submit.prevent="submitReview"
         >
           <h2>Share Your Experience</h2>
-          <p>Posting as {{ authStore.user?.username }}</p>
 
-          <label>How would you rate this restaurant?</label>
-          <div class="star-picker" role="group" aria-label="Rating">
+          <p>
+            Posting as
+            {{ authStore.user?.username }}
+          </p>
+
+          <label>
+            How would you rate this restaurant?
+          </label>
+
+          <div
+            class="star-picker"
+            role="group"
+            aria-label="Rating"
+          >
             <button
               v-for="star in 5"
               :key="star"
               type="button"
               class="star-button"
               :class="{
-                lit: star <= (hoveredRating || reviewRating)
+                lit: star <= (
+                  hoveredRating ||
+                  reviewRating
+                )
               }"
               :aria-label="`${star} stars`"
-              :aria-pressed="reviewRating === star"
+              :aria-pressed="
+                reviewRating === star
+              "
               :disabled="reviewSubmitting"
-              @mouseenter="hoveredRating = star"
-              @mouseleave="hoveredRating = 0"
-              @focus="hoveredRating = star"
-              @blur="hoveredRating = 0"
-              @click="reviewRating = star"
+              @mouseenter="
+                hoveredRating = star
+              "
+              @mouseleave="
+                hoveredRating = 0
+              "
+              @focus="
+                hoveredRating = star
+              "
+              @blur="
+                hoveredRating = 0
+              "
+              @click="
+                reviewRating = star
+              "
             >
               ★
             </button>
-            <span class="rating-label">{{ reviewRating }} / 5</span>
+
+            <span class="rating-label">
+              {{ reviewRating }} / 5
+            </span>
           </div>
 
-          <label for="review-comment">Your Review</label>
+          <label for="review-comment">
+            Your Review
+          </label>
+
           <textarea
             id="review-comment"
             v-model="reviewComment"
@@ -504,33 +663,59 @@ onMounted(async () => {
             required
           ></textarea>
 
-          <p v-if="reviewFormError" role="alert">
+          <p
+            v-if="reviewFormError"
+            role="alert"
+          >
             {{ reviewFormError }}
           </p>
 
-          <button type="submit" :disabled="reviewSubmitting">
-            {{ reviewSubmitting ? 'Posting...' : 'Submit Review' }}
+          <button
+            type="submit"
+            :disabled="reviewSubmitting"
+          >
+            {{
+              reviewSubmitting
+                ? 'Posting...'
+                : 'Submit Review'
+            }}
           </button>
         </form>
+
       </article>
 
-      <!-- EXISTING REVIEWS -->
+      <!-- COMMUNITY REVIEWS -->
       <section class="reviews-section">
         <h2>Community Reviews</h2>
 
-        <p v-if="reviewsLoading" role="status">
+        <p
+          v-if="reviewsLoading"
+          role="status"
+        >
           Loading reviews...
         </p>
 
-        <div v-else-if="reviewsError" role="alert">
+        <div
+          v-else-if="reviewsError"
+          role="alert"
+        >
           <p>{{ reviewsError }}</p>
-          <button @click="loadReviews(selectedRestaurant.id)">
+
+          <button
+            @click="
+              loadReviews(selectedRestaurant.id)
+            "
+          >
             Try Again
           </button>
         </div>
 
-        <p v-else-if="reviews.length === 0" class="muted">
-          No reviews yet. Be the first to share your experience!
+        <p
+          v-else-if="reviews.length === 0"
+          class="muted"
+        >
+          No reviews yet. Be the first to share
+          your experience!
         </p>
 
         <div v-else class="reviews-list">
@@ -540,19 +725,26 @@ onMounted(async () => {
             class="review-card"
           >
             <div class="review-heading">
-              <strong>{{ review.username || 'User' }}</strong>
+              <strong>
+                {{ review.username || 'User' }}
+              </strong>
+
               <time :datetime="review.created_at">
                 {{ formatDate(review.created_at) }}
               </time>
             </div>
 
             <p class="review-rating">
-              ★ {{ review.rating }} / 5
+              {{ review.rating }} / 5
             </p>
-            <p class="review-comment">{{ review.comment }}</p>
+
+            <p class="review-comment">
+              {{ review.comment }}
+            </p>
           </article>
         </div>
       </section>
+
     </template>
   </section>
 </template>
@@ -565,7 +757,9 @@ onMounted(async () => {
   color: #392723;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   color: #71372e;
 }
 
@@ -573,7 +767,9 @@ p {
   line-height: 1.7;
 }
 
-button, input, textarea {
+button,
+input,
+textarea {
   font: inherit;
 }
 
@@ -607,10 +803,9 @@ textarea:focus-visible {
   font-size: 12px;
   letter-spacing: 2px;
   font-weight: 800;
-  color: #d5a76e;
+  color: #b58463;
 }
 
-/* Search */
 .section-heading {
   margin: 20px 0 22px;
 }
@@ -623,6 +818,8 @@ textarea:focus-visible {
 .section-heading p {
   color: #735c50;
 }
+
+/* SEARCH */
 
 .search-bar {
   display: flex;
@@ -643,7 +840,8 @@ textarea:focus-visible {
   font-weight: bold;
 }
 
-input, textarea {
+input,
+textarea {
   width: 100%;
   padding: 13px;
   background: white;
@@ -660,6 +858,8 @@ input, textarea {
 .secondary-button:hover:not(:disabled) {
   color: white;
 }
+
+/* CATEGORIES */
 
 .category-filters {
   display: flex;
@@ -681,11 +881,13 @@ input, textarea {
   color: white;
 }
 
-.result-count, .muted {
+.result-count,
+.muted {
   color: #735c50;
 }
 
-/* Restaurant cards */
+/* RESTAURANT CARDS */
+
 .restaurant-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -721,16 +923,6 @@ input, textarea {
   align-items: center;
 }
 
-.restaurant-icon {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  background: #f4e5d9;
-  color: #8c4c51;
-  border-radius: 11px;
-}
-
 .details-link {
   color: #71372e;
   font-size: 13px;
@@ -762,17 +954,14 @@ input, textarea {
   line-height: 1.6;
 }
 
-/* Empty state */
+/* EMPTY STATES */
+
 .empty-state {
   padding: 55px 24px;
   background: #fffaf6;
   border: 1px dashed #d9c3b2;
   border-radius: 18px;
   text-align: center;
-}
-
-.empty-icon {
-  font-size: 52px;
 }
 
 .empty-state h3 {
@@ -785,7 +974,8 @@ input, textarea {
   color: #735c50;
 }
 
-/* Details */
+/* RESTAURANT DETAILS */
+
 .back-button {
   margin-bottom: 24px;
   background: transparent;
@@ -793,12 +983,13 @@ input, textarea {
   border: none;
 }
 
-.back-button:hover {
+.back-button:hover:not(:disabled) {
   color: #71372e;
   background: #f4e5d9;
 }
 
-.details-card, .review-card {
+.details-card,
+.review-card {
   padding: 30px;
   background: white;
   border: 1px solid #e1cfc3;
@@ -811,17 +1002,20 @@ input, textarea {
   font-size: 38px;
 }
 
-.address, .description {
+.address,
+.description {
   color: #735c50;
 }
 
-.description, .review-comment {
+.description,
+.review-comment {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-.rating-summary, .review-rating {
-  color: #b17b26;
+.rating-summary,
+.review-rating {
+  color: #956a32;
   font-weight: bold;
 }
 
@@ -832,7 +1026,8 @@ input, textarea {
   margin-top: 25px;
 }
 
-/* Star rating */
+/* REVIEW FORM */
+
 .review-form {
   display: grid;
   gap: 14px;
@@ -889,7 +1084,8 @@ textarea {
   font-weight: bold;
 }
 
-/* Reviews */
+/* COMMUNITY REVIEWS */
+
 .reviews-section {
   margin-top: 35px;
 }
@@ -914,7 +1110,8 @@ textarea {
   color: #8c2222;
 }
 
-/* Mobile */
+/* MOBILE */
+
 @media (max-width: 760px) {
   .restaurant-list {
     grid-template-columns: 1fr;
@@ -924,7 +1121,8 @@ textarea {
     padding: 20px 15px 50px;
   }
 
-  .details-card, .review-card {
+  .details-card,
+  .review-card {
     padding: 20px;
   }
 

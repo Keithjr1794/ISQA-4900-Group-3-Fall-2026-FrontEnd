@@ -3,7 +3,7 @@
   <main class="home-page">
     <section class="hero">
       <div class="hero-content">
-        <span class="eyebrow">✦ RATE MY RESTAURANT</span>
+        <span class="eyebrow">RATE MY RESTAURANT</span>
 
         <h1>
           Discover your next
@@ -54,12 +54,7 @@
   display: grid;
   grid-template-columns: 1fr 0.35fr;
   min-height: 420px;
-  background: linear-gradient(
-    120deg,
-    #52242e 0%,
-    #713746 55%,
-    #914d59 100%
-  );
+  background: #71372e;
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 18px 40px rgba(82, 36, 46, 0.15);

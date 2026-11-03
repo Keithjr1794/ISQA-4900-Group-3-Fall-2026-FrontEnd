@@ -1,3 +1,4 @@
+
 <template>
   <div class="app">
     <header class="site-header">
@@ -47,7 +48,7 @@
           </li>
 
           <li v-else class="user-menu">
-            <span>Hi, {{ authStore.user.username }}</span>
+            <span>Hi, {{ authStore.user?.username || 'User' }}</span>
 
             <button
               class="logout-button"
@@ -64,8 +65,6 @@
     <main>
       <router-view />
     </main>
-
-  
   </div>
 </template>
 
@@ -136,47 +135,58 @@ body {
   flex-direction: column;
 }
 
+/* Original burgundy navigation */
 .site-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 20px;
-  padding: 24px 6%;
+  padding: 22px 6%;
   background: #71372e;
-  border-bottom: 3px solid #bd8267;
+  border-bottom: 2px solid #bd8267;
+  box-shadow: 0 3px 12px rgba(80, 35, 35, 0.12);
 }
 
 .brand {
-  color: #f7eee3;
-  font-size: 22px;
-  font-weight: bold;
+  color: #fff8f1;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
   text-decoration: none;
+}
+
+.brand:hover {
+  color: #f2d6c8;
 }
 
 .nav-items {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 24px;
+  gap: 12px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.nav-items a,
-.nav-items span {
+.nav-items a {
   display: inline-block;
-  padding: 6px 0;
-  color: #f7eee3;
-  font-weight: bold;
+  padding: 10px 15px;
+  color: #fff8f1;
+  font-weight: 600;
   text-decoration: none;
+  border-radius: 10px;
+  transition: background 0.2s, color 0.2s;
 }
 
-.nav-items a:hover,
+.nav-items a:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .nav-items a.router-link-exact-active {
-  text-decoration: underline;
-  text-underline-offset: 6px;
+  background: #fff1e8;
+  color: #71372e;
 }
 
 .user-menu {
@@ -186,18 +196,24 @@ body {
   gap: 12px;
 }
 
+.user-menu span {
+  color: #fff8f1;
+  font-weight: 600;
+}
+
 .logout-button,
 .menu-toggle {
-  padding: 8px 12px;
+  padding: 9px 14px;
   background: transparent;
   border: 1px solid #f7eee3;
-  border-radius: 5px;
+  border-radius: 9px;
   color: #f7eee3;
   font: inherit;
   cursor: pointer;
 }
 
-.logout-button:hover {
+.logout-button:hover,
+.menu-toggle:hover {
   background: #582a23;
 }
 
@@ -207,31 +223,22 @@ body {
 
 .site-header a:focus-visible,
 .site-header button:focus-visible {
-  outline: 2px solid #f7eee3;
-  outline-offset: 5px;
+  outline: 2px solid #fff8f1;
+  outline-offset: 4px;
 }
 
 .app > main {
   flex: 1;
 }
 
-.app > footer {
-  padding: 24px;
-  background: #eee1d4;
-  color: #633d32;
-  border-top: 1px solid #d9c3b2;
-  text-align: center;
-  font-size: 14px;
-}
-
 @media screen and (max-width: 768px) {
   .site-header {
     gap: 16px;
-    padding: 20px;
+    padding: 18px 20px;
   }
 
   .brand {
-    font-size: 20px;
+    font-size: 21px;
   }
 
   .menu-toggle {
@@ -249,9 +256,17 @@ body {
 
   .nav-items {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: stretch;
+    gap: 8px;
     padding-top: 12px;
+  }
+
+  .nav-items a {
+    display: block;
+  }
+
+  .user-menu {
+    padding: 10px 15px;
   }
 }
 </style>
