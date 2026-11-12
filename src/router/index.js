@@ -1,4 +1,6 @@
+
 import { createRouter, createWebHistory } from 'vue-router'
+
 import { useAuthStore } from '../store/AuthStore.js'
 
 import Home from '../components/Home.vue'
@@ -6,6 +8,7 @@ import RestaurantList from '../components/RestaurantList.vue'
 import MyPlaces from '../components/MyPlaces.vue'
 import Auth from '../components/Auth.vue'
 import Register from '../components/Register.vue'
+import AdminDashboard from '../components/AdminDashboard.vue'
 
 const routes = [
   {
@@ -20,11 +23,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-  path: '/restaurants/:id',
-  name: 'RestaurantDetail',
-  component: RestaurantList,
-  meta: { requiresAuth: true },
-},
+    path: '/restaurants/:id',
+    name: 'RestaurantDetail',
+    component: RestaurantList,
+    meta: { requiresAuth: true },
+  },
   {
     path: '/my-places',
     name: 'MyPlaces',
@@ -41,6 +44,12 @@ const routes = [
     path: '/register',
     name: 'Register',
     component: Register,
+  },
+  {
+    path: '/admin/dashboard',
+    name: 'AdminDashboard',
+    component: AdminDashboard,
+    meta: { requiresAuth: true },
   },
 ]
 
