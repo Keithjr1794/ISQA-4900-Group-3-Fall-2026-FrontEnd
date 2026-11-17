@@ -6,13 +6,25 @@
       <p class="sidebar-label">ADMIN PANEL</p>
 
       <nav>
-        <a class="active" href="/admin/dashboard">
+        <router-link to="/admin/dashboard">
           Dashboard
-        </a>
-        <a href="/restaurants">Restaurants</a>
-        <a href="/admin/dashboard">Categories</a>
-        <a href="/admin/dashboard">Reviews</a>
-        <a href="/admin/dashboard">Users</a>
+        </router-link>
+
+        <router-link to="/admin/restaurants">
+          Restaurants
+        </router-link>
+
+        <span class="sidebar-placeholder">
+          Categories
+        </span>
+
+        <span class="sidebar-placeholder">
+          Reviews
+        </span>
+
+        <span class="sidebar-placeholder">
+          Users
+        </span>
       </nav>
     </aside>
 
@@ -22,6 +34,7 @@
           <h1>Admin Dashboard</h1>
           <p>Manage your restaurant application</p>
         </div>
+
         <span class="admin-badge">Administrator</span>
       </header>
 
@@ -94,6 +107,7 @@ onMounted(async () => {
       if (response.status === 403) {
         throw new Error('Admin access required.')
       }
+
       throw new Error('Unable to load dashboard.')
     }
 
@@ -114,6 +128,7 @@ onMounted(async () => {
   font-family: Arial, sans-serif;
 }
 
+/* Sidebar */
 .sidebar {
   width: 250px;
   flex-shrink: 0;
@@ -140,18 +155,25 @@ onMounted(async () => {
   gap: 10px;
 }
 
-.sidebar a {
+.sidebar a,
+.sidebar-placeholder {
+  display: block;
   color: white;
   text-decoration: none;
   padding: 13px 15px;
   border-radius: 8px;
 }
 
+.sidebar-placeholder {
+  cursor: default;
+}
+
 .sidebar a:hover,
-.sidebar a.active {
+.sidebar a.router-link-exact-active {
   background: rgba(255, 255, 255, 0.18);
 }
 
+/* Main Content */
 .content {
   flex: 1;
   min-width: 0;
@@ -182,6 +204,7 @@ header p {
   font-weight: bold;
 }
 
+/* Dashboard Statistics */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -206,6 +229,7 @@ header p {
   margin-top: 15px;
 }
 
+/* Welcome Section */
 .welcome {
   background: white;
   margin-top: 35px;
@@ -222,6 +246,7 @@ header p {
   color: #777;
 }
 
+/* Error Message */
 .error {
   color: #b42318;
   background: #fff0ee;
@@ -229,6 +254,7 @@ header p {
   border-radius: 8px;
 }
 
+/* Responsive Layout */
 @media (max-width: 1100px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);

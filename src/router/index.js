@@ -9,6 +9,7 @@ import MyPlaces from '../components/MyPlaces.vue'
 import Auth from '../components/Auth.vue'
 import Register from '../components/Register.vue'
 import AdminDashboard from '../components/AdminDashboard.vue'
+import AdminRestaurants from '../components/AdminRestaurants.vue'
 
 const routes = [
   {
@@ -50,6 +51,12 @@ const routes = [
     name: 'AdminDashboard',
     component: AdminDashboard,
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/admin/restaurants',
+    name: 'AdminRestaurants',
+    component: AdminRestaurants,
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
 ]
 

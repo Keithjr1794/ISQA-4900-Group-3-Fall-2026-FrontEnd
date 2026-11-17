@@ -44,14 +44,14 @@
             </span>
 
             <span class="heart" aria-label="Saved restaurant">
-              ❤️
+              
             </span>
           </div>
 
           <h2>{{ restaurantName(place.restaurant) }}</h2>
 
           <p class="location">
-            📍 {{ restaurantLocation(place.restaurant) }}
+             {{ restaurantLocation(place.restaurant) }}
           </p>
 
           <p class="description">

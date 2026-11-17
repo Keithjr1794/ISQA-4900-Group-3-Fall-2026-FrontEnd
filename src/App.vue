@@ -41,6 +41,22 @@
             </router-link>
           </li>
 
+          <!-- Admin Panel -->
+          <li
+            v-if="
+              authStore.isAuthenticated &&
+              authStore.user?.is_superuser
+            "
+          >
+            <router-link
+              to="/admin/dashboard"
+              :class="{ 'admin-active': $route.path.startsWith('/admin') }"
+              @click="closeMenu"
+            >
+              Admin Panel
+            </router-link>
+          </li>
+
           <li v-if="!authStore.isAuthenticated">
             <router-link to="/login" @click="closeMenu">
               Login
@@ -62,8 +78,13 @@
       </nav>
     </header>
 
+    <!-- Keep admin pages in memory for faster navigation -->
     <main>
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <KeepAlive :include="['AdminDashboard', 'AdminRestaurants']">
+          <component :is="Component" />
+        </KeepAlive>
+      </router-view>
     </main>
   </div>
 </template>
@@ -135,7 +156,7 @@ body {
   flex-direction: column;
 }
 
-/* Original burgundy navigation */
+/* Main Navigation */
 .site-header {
   display: flex;
   justify-content: space-between;
@@ -184,11 +205,24 @@ body {
   background: rgba(255, 255, 255, 0.12);
 }
 
+/* Active navigation links */
 .nav-items a.router-link-exact-active {
   background: #fff1e8;
   color: #71372e;
 }
 
+/* Keep Admin Panel highlighted on all admin pages */
+.nav-items a.admin-active {
+  background: #fff1e8;
+  color: #71372e;
+  font-weight: bold;
+}
+
+.nav-items a.admin-active:hover {
+  background: #f2d6c8;
+}
+
+/* User Menu */
 .user-menu {
   display: flex;
   align-items: center;
@@ -231,6 +265,7 @@ body {
   flex: 1;
 }
 
+/* Mobile Navigation */
 @media screen and (max-width: 768px) {
   .site-header {
     gap: 16px;
