@@ -1,4 +1,3 @@
-
 <script setup>
 import axios from 'axios'
 import { computed, onMounted, ref } from 'vue'
@@ -275,6 +274,69 @@ async function saveToPlaces() {
   }
 }
 
+const showRestaurantForm = ref(false)
+const restaurantForm = ref(emptyRestaurant())
+const restaurantSubmitting = ref(false)
+const restaurantFormError = ref('')
+const deletingRestaurant = ref(false)
+const deleteFailure = ref(null)
+
+function emptyRestaurant() {
+  return { name: '', address: '', city: '', state: '', category: '',
+    description: '', phone: '', website: '' }
+}
+
+async function submitRestaurant() {
+  if (!authStore.user || restaurantSubmitting.value) return
+
+  restaurantSubmitting.value = true
+  restaurantFormError.value = ''
+  try {
+    const payload = { ...restaurantForm.value }
+    for (const field of ['description', 'phone', 'website']) {
+      if (!payload[field]) delete payload[field]
+    }
+
+    await APIService.addRestaurant(payload)
+    restaurantForm.value = emptyRestaurant()
+    showRestaurantForm.value = false
+    clearFilters()
+  } catch (err) {
+    restaurantFormError.value = getErrorMessage(err, 'Unable to add the restaurant.')
+  } finally {
+    restaurantSubmitting.value = false
+  }
+}
+
+const canDeleteRestaurant = computed(() => {
+  const user = authStore.user
+  const restaurant = selectedRestaurant.value
+  return Boolean(user && restaurant &&
+    (user.is_superuser || restaurant.created_by === user.id))
+})
+
+async function deleteSelectedRestaurant() {
+  if (!canDeleteRestaurant.value || deletingRestaurant.value) return
+
+  const restaurant = selectedRestaurant.value
+  if (!window.confirm('Delete ' + restaurant.name + '?')) return
+
+  deleteFailure.value = null
+  deletingRestaurant.value = true
+  try {
+    await APIService.deleteRestaurant(restaurant.id)
+    if (selectedRestaurant.value?.id === restaurant.id) backToList()
+    await loadRestaurants()
+  } catch (err) {
+    deleteFailure.value = {
+      id: restaurant.id,
+      message: getErrorMessage(err, 'Unable to delete the restaurant.'),
+    }
+  } finally {
+    deletingRestaurant.value = false
+  }
+}
+
 onMounted(async () => {
   loadCategories()
   await loadRestaurants()
@@ -304,6 +366,35 @@ onMounted(async () => {
         <span class="eyebrow">EXPLORE & DISCOVER</span>
         <h2>Find your perfect spot</h2>
         <p>Great restaurants are waiting to be discovered.</p>
+      </div>
+
+      <div v-if="authStore.user" class="restaurant-create">
+        <button type="button" :disabled="restaurantSubmitting"
+          @click="showRestaurantForm = !showRestaurantForm">
+          {{ showRestaurantForm ? 'Close form' : 'Add Restaurant' }}
+        </button>
+        <form v-if="showRestaurantForm" @submit.prevent="submitRestaurant">
+          <label>Name <input v-model.trim="restaurantForm.name" required /></label>
+          <label>Address <input v-model.trim="restaurantForm.address" required /></label>
+          <label>City <input v-model.trim="restaurantForm.city" required /></label>
+          <label>State <input v-model.trim="restaurantForm.state" required /></label>
+          <label>
+            Category
+            <select v-model="restaurantForm.category" required>
+              <option disabled value="">Select a category</option>
+              <option v-for="category in categories" :key="category.id" :value="category.id">
+                {{ category.name }}
+              </option>
+            </select>
+          </label>
+          <label>Description <textarea v-model.trim="restaurantForm.description"></textarea></label>
+          <label>Phone <input v-model.trim="restaurantForm.phone" type="tel" /></label>
+          <label>Website <input v-model.trim="restaurantForm.website" type="url" /></label>
+          <p v-if="restaurantFormError" role="alert">{{ restaurantFormError }}</p>
+          <button type="submit" :disabled="restaurantSubmitting || !categories.length">
+            {{ restaurantSubmitting ? 'Saving…' : 'Save Restaurant' }}
+          </button>
+        </form>
       </div>
 
       <!-- SEARCH -->
@@ -483,6 +574,14 @@ onMounted(async () => {
           {{ selectedRestaurant.address }},
           {{ selectedRestaurant.city }},
           {{ selectedRestaurant.state }}
+        </p>
+
+        <button v-if="canDeleteRestaurant" type="button"
+          :disabled="deletingRestaurant" @click="deleteSelectedRestaurant">
+          {{ deletingRestaurant ? 'Deleting…' : 'Delete Restaurant' }}
+        </button>
+        <p v-if="deleteFailure?.id === selectedRestaurant.id" role="alert">
+          {{ deleteFailure.message }}
         </p>
 
         <!-- RATING SUMMARY -->
@@ -1135,5 +1234,20 @@ textarea {
   button {
     transition: none;
   }
+}
+.restaurant-create {
+  margin-bottom: 1rem;
+}
+
+.restaurant-create form {
+  display: grid;
+  gap: .75rem;
+  max-width: 32rem;
+  margin-top: .75rem;
+}
+
+.restaurant-create label {
+  display: grid;
+  gap: .25rem;
 }
 </style>
