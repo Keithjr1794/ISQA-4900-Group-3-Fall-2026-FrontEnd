@@ -23,9 +23,10 @@
           Reviews
         </router-link>
 
-        <span class="sidebar-placeholder">
+        <router-link to="/admin/users">
           Users
-        </span>
+        </router-link>
+
       </nav>
     </aside>
 
