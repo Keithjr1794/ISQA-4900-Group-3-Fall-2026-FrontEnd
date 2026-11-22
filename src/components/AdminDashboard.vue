@@ -1,4 +1,3 @@
-
 <template>
   <div class="admin-layout">
     <aside class="sidebar">
@@ -22,9 +21,9 @@
           Reviews
         </span>
 
-        <span class="sidebar-placeholder">
+        <router-link :to="{ name: 'admin-users' }">
           Users
-        </span>
+        </router-link>
       </nav>
     </aside>
 
@@ -79,6 +78,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import APIService, { API_URL } from '../api/APIService.js'
 
 const stats = ref({
   total_restaurants: 0,
@@ -92,20 +92,17 @@ const error = ref('')
 
 onMounted(async () => {
   try {
-    const token = localStorage.getItem('access')
-
-    const response = await fetch(
-      'http://127.0.0.1:8000/api/admin/dashboard/',
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    )
+    const response = await fetch(`${API_URL}/api/admin/dashboard/`, {
+      headers: APIService.getAuthHeaders(),
+    })
 
     if (!response.ok) {
       if (response.status === 403) {
         throw new Error('Admin access required.')
+      }
+
+      if (response.status === 401) {
+        throw new Error('Please log in again.')
       }
 
       throw new Error('Unable to load dashboard.')
