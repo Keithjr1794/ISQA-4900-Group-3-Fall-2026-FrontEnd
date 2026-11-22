@@ -18,9 +18,9 @@
           Categories
         </router-link>
 
-        <span class="sidebar-placeholder">
+        <router-link to="/admin/reviews" class="sidebar-link">
           Reviews
-        </span>
+        </router-link>
 
         <span class="sidebar-placeholder">
           Users

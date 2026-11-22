@@ -92,6 +92,19 @@ q
     })
   }
 
+  getAdminReviews() {
+    return axios.get(`${API_URL}/api/admin/reviews/`, {
+      headers: this.getAuthHeaders(),
+    })
+  }
+
+  deleteAdminReview(id) {
+    return axios.delete(`${API_URL}/api/admin/reviews/`, {
+      params: { id },
+      headers: this.getAuthHeaders(),
+    })
+  }
+
   // My Places
   getSavedRestaurants() {
     return axios.get(`${API_URL}/api/saved-restaurants/`, {

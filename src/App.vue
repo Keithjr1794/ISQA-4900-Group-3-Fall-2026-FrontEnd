@@ -80,11 +80,7 @@
 
     <!-- Keep admin pages in memory for faster navigation -->
     <main>
-      <router-view v-slot="{ Component }">
-        <KeepAlive :include="['AdminDashboard', 'AdminRestaurants']">
-          <component :is="Component" />
-        </KeepAlive>
-      </router-view>
+      <router-view />
     </main>
   </div>
 </template>

@@ -11,6 +11,7 @@ import Register from '../components/Register.vue'
 import AdminDashboard from '../components/AdminDashboard.vue'
 import AdminRestaurants from '../components/AdminRestaurants.vue'
 import AdminCategories from '../components/AdminCategories.vue'
+import AdminReviews from '../components/AdminReviews.vue'
 
 const routes = [
   {
@@ -51,7 +52,7 @@ const routes = [
     path: '/admin/dashboard',
     name: 'AdminDashboard',
     component: AdminDashboard,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/restaurants',
@@ -63,6 +64,12 @@ const routes = [
     path: '/admin/categories',
     name: 'AdminCategories',
     component: AdminCategories,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/reviews',
+    name: 'AdminReviews',
+    component: AdminReviews,
     meta: { requiresAuth: true, requiresAdmin: true },
   },
 ]
@@ -77,6 +84,10 @@ router.beforeEach((to) => {
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return { name: 'Auth' }
+  }
+
+  if (to.meta.requiresAdmin && !authStore.user?.is_staff) {
+    return { name: 'Home' }
   }
 })
 
