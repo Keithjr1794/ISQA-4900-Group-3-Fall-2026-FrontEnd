@@ -17,9 +17,9 @@
           Categories
         </router-link>
 
-        <span class="sidebar-placeholder">
+        <router-link to="/admin/reviews" class="sidebar-link">
           Reviews
-        </span>
+        </router-link>
 
         <router-link :to="{ name: 'admin-users' }">
           Users
