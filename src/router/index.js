@@ -10,6 +10,7 @@ import Auth from '../components/Auth.vue'
 import Register from '../components/Register.vue'
 import AdminDashboard from '../components/AdminDashboard.vue'
 import AdminRestaurants from '../components/AdminRestaurants.vue'
+import AdminCategories from '../components/AdminCategories.vue'
 
 const routes = [
   {
@@ -56,6 +57,12 @@ const routes = [
     path: '/admin/restaurants',
     name: 'AdminRestaurants',
     component: AdminRestaurants,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/categories',
+    name: 'AdminCategories',
+    component: AdminCategories,
     meta: { requiresAuth: true, requiresAdmin: true },
   },
 ]
