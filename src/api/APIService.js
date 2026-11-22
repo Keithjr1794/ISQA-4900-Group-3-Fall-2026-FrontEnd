@@ -138,6 +138,19 @@ q
       refresh,
     })
   }
+  getAdminUsers() {
+    return axios.get(`${API_URL}/api/admin/users/`, {
+      headers: this.getAuthHeaders(),
+    })
+  }
+
+  updateAdminUserStatus(userId, isActive) {
+    return axios.patch(
+      `${API_URL}/api/admin/users/${userId}/status/`,
+      { is_active: isActive },
+      { headers: this.getAuthHeaders() },
+    )
+  }
 
   getCurrentUser() {
     return axios.get(`${API_URL}/api/me/`, {
