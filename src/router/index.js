@@ -1,6 +1,7 @@
 
 import { createRouter, createWebHistory } from 'vue-router'
 
+import APIService from '../api/APIService.js'
 import { useAuthStore } from '../store/AuthStore.js'
 
 import Home from '../components/Home.vue'
@@ -12,6 +13,7 @@ import AdminDashboard from '../components/AdminDashboard.vue'
 import AdminRestaurants from '../components/AdminRestaurants.vue'
 import AdminCategories from '../components/AdminCategories.vue'
 import AdminReviews from '../components/AdminReviews.vue'
+import AdminUsers from '../components/AdminUsers.vue'
 
 const routes = [
   {
@@ -71,6 +73,27 @@ const routes = [
     name: 'AdminReviews',
     component: AdminReviews,
     meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/users',
+    name: 'admin-users',
+    component: AdminUsers,
+    meta: { requiresAuth: true, requiresAdmin: true },
+    async beforeEnter() {
+      try {
+        const { data } = await APIService.getCurrentUser()
+
+        if (data.is_staff === true) {
+          return true
+        }
+      } catch (error) {
+        if (error.response?.status === 401) {
+          return { name: 'Auth' }
+        }
+      }
+
+      return { name: 'Home' }
+    },
   },
 ]
 
