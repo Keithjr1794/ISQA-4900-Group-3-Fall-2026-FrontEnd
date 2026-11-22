@@ -54,6 +54,18 @@ export class APIService {
     })
   }
 
+  addCategory(category) {
+    return axios.post(`${API_URL}/api/categories/`, category, {
+      headers: this.getAuthHeaders(),
+    })
+  }
+q
+  updateCategory(id, category) {
+    return axios.patch(`${API_URL}/api/categories/${id}/`, category, {
+      headers: this.getAuthHeaders(),
+    })
+  }
+
   // Reviews
   getReviews(restaurantId) {
     return axios.get(`${API_URL}/api/reviews/`, {

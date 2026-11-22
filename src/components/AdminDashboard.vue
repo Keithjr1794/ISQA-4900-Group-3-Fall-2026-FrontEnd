@@ -14,9 +14,9 @@
           Restaurants
         </router-link>
 
-        <span class="sidebar-placeholder">
+        <router-link to="/admin/categories">
           Categories
-        </span>
+        </router-link>
 
         <span class="sidebar-placeholder">
           Reviews
