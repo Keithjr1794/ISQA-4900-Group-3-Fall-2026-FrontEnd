@@ -11,7 +11,8 @@
         <router-link to="/admin/restaurants">Restaurants</router-link>
         <router-link to="/admin/categories">Categories</router-link>
         <router-link to="/admin/reviews">Reviews</router-link>
-        <span class="sidebar-placeholder">Users</span>
+        <router-link to="/admin/users"> Users </router-link>
+
       </nav>
     </aside>
 
